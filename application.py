@@ -7,6 +7,8 @@ import tornado.web
 import tornado.websocket
 
 
+from user.session import Session
+
 class Event(object):
     topic = None
     data = None
@@ -20,7 +22,6 @@ class Event(object):
             'topic': self.topic,
             'data': self.data,
         })
-
 
 class EventWebsocket(tornado.websocket.WebSocketHandler):
     listener_topics = defaultdict(set)
@@ -36,17 +37,37 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             try:
                 listener.write_message(message)
             except:
-                logging.error('Error sending message', exc_info=True)
+                logging.error('Error sending message: ' + message, exc_info=True)
 
     def open(self):
-        event = Event('/sessions/new', {'id': 'randomid'})
+        self.session = Session()
+        if not self.session.login(self.get_argument('key')):
+            self.reject()
+
+        event = Event('/sessions/new', {
+            'key': self.session.key(),
+            'name': 'Unknown',
+        })
+
         self._message(event.to_json(),
             EventWebsocket.topic_listeners['/sessions/new'])
 
+    def reject(self):
+        # TODO: send a message telling them that their key was rejected
+        # then close the connection
+        pass
+
     def on_message(self, raw_message):
         message = json.loads(raw_message)
-        topic = message['topic']
-        data = message['data']
+
+        # Authentication check
+        key = message.get('key')
+        if not self.session.is_valid(key):
+            return
+
+        topic = message.get('topic')
+        data = message.get('data')
+
         if topic == '/subscribe':
             EventWebsocket.topic_listeners[data].add(self)
             EventWebsocket.listener_topics[self].add(data)
@@ -74,12 +95,15 @@ class ApplicationHandler(tornado.web.RequestHandler):
         # render mustache templates
         # import os
         # print os.stat('/apps/dailymeow/static/js/templates.js')
-        import subprocess
-        subprocess.call(['handlebars', '/apps/dailymeow/static/tmpl/', '-f',
-            '/apps/dailymeow/static/js/templates.js'])
+        # import subprocess
+        # subprocess.call(['handlebars', '/apps/dailymeow/static/tmpl/', '-f',
+            # '/apps/dailymeow/static/js/templates.js'])
+        pass
 
     def get(self):
-        self.render('application.html')
+        self.render('application.html', **{
+            'key': self.get_argument('key'),
+        })
 
 
 settings = {
@@ -88,8 +112,8 @@ settings = {
 }
 
 application = tornado.web.Application([
-    (r'/', ApplicationHandler),
-    (r'/e', EventWebsocket),
+    (r'/play', ApplicationHandler),
+    (r'/event', EventWebsocket),
 ], **settings)
 
 
@@ -98,44 +122,3 @@ if __name__ == '__main__':
     tornado.ioloop.IOLoop.instance().start()
 
 
-# ideas...
-import redis
-redis = redis.StrictRedis(host='localhost', port=6379, db=0)
-
-
-class Resource:
-    def _namespace(cls):
-        return cls.__name__.lower()
-
-    def _id(cls, _id):
-        return '%s:%s' % (cls.__name__.lower(), _id)
-
-    @classmethod
-    def create(cls, data, listeners):
-        if not 'id' in data:
-            data['id'] = redis.incr('global:%s' % cls._namespace())
-        _id = cls._id(data['id'])
-        redis.set(_id, data)
-        redis.lpush(cls._namespace(), _id)
-        return data, listeners
-
-    @classmethod
-    def update(cls, data, listeners):
-        redis.set(cls._id(data['id']), data)
-        return data, listeners
-
-    @classmethod
-    def delete(cls, data, listeners):
-        return redis.delete(cls._id(data['id'])), listeners
-
-    @classmethod
-    def read(cls, data, listeners):
-        return redis.get(cls._id(data['id'])), set([])
-
-    @classmethod
-    def list(cls, listeners):
-        ids = redis.get(cls._namespace())
-        collection = []
-        for _id in ids:
-            collection.append(redis.get(_id))
-        return collection, set([])

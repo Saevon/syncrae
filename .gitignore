@@ -1,0 +1,10 @@
+
+.idea/
+*.pyc
+*.orig
+*.out
+*.DS_Store
+*.sqlite3
+*.hidden
+static/compressed/
+index/

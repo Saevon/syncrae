@@ -12,11 +12,20 @@
         <script type="text/javascript" src="{{ static_url("js/lab.js") }}"></script>
         <script>
             var HOST = '{{ request.host }}';
-            $LAB
-            .script("{{ static_url("js/zepto.js") }}").wait()
-            .script("{{ static_url("js/handlebars.js") }}").wait()
-            .script("{{ static_url("js/templates.js") }}").wait()
-            .script("{{ static_url("js/application.js") }}")
+            $LAB.setOptions({
+                AlwaysPreserveOrder: true
+            })
+                .script("{{ static_url("js/zepto.js") }}").wait()
+                .script("{{ static_url("js/handlebars.js") }}").wait()
+                .script("{{ static_url("js/templates.js") }}").wait()
+                .script("{{ static_url("js/webdnd.js") }}").wait()
+                .script("{{ static_url("js/user.js") }}")
+                .wait(function() {
+                    // The first key, likely changes after this point
+                    webdnd.user.key('{{ key }}');
+                })
+                .script("{{ static_url("js/websocket.js") }}").wait()
+                .script("{{ static_url("js/application.js") }}");
         </script>
     </head>
     <body>
