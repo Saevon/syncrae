@@ -1,13 +1,16 @@
-import os
+# Needs to be done first to configure django settings
+from settings import settings
+
+from collections import defaultdict
+from user.session import Session
 import json
 import logging
-from collections import defaultdict
+import os
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
 
-from user.session import Session
 
 class Event(object):
     topic = None
@@ -41,11 +44,14 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     def open(self):
         self.session = Session()
-        if not self.session.login(self.get_argument('key')):
+
+        key = self.get_secure_cookie(settings.ID_COOKIE_NAME)
+        if not self.session.login(key):
             self.reject()
 
+        # Save the new key
+        # Which coincidentally doesn't change right now :P
         event = Event('/sessions/new', {
-            'key': self.session.key(),
             'name': 'Unknown',
         })
 
@@ -93,32 +99,43 @@ class ApplicationHandler(tornado.web.RequestHandler):
     def prepare(self):
         # this should be for debug mode only...
         # render mustache templates
-        # import os
-        # print os.stat('/apps/dailymeow/static/js/templates.js')
-        # import subprocess
-        # subprocess.call(['handlebars', '/apps/dailymeow/static/tmpl/', '-f',
-            # '/apps/dailymeow/static/js/templates.js'])
-        pass
+        # Perhaps this should happen on server load?
+        # Not per request to the page
+        print os.stat('/apps/syncrae/static/js/templates.js')
+
+        import subprocess
+        subprocess.call(['handlebars', '/apps/syncrae/static/tmpl/', '-f',
+            '/apps/syncrae/static/js/templates.js'])
 
     def get(self):
-        self.render('application.html', **{
-            'key': self.get_argument('key'),
-        })
+        self.set_secure_cookie('webdnd_playid', self.get_argument('key'))
 
+        self.render('application.html')
 
-settings = {
-    'static_path': os.path.join(os.path.dirname(__file__), 'static'),
-    'debug': True,
-}
 
 application = tornado.web.Application([
+    # Application URI's
     (r'/play', ApplicationHandler),
     (r'/event', EventWebsocket),
 ], **settings)
 
 
 if __name__ == '__main__':
-    application.listen(8888)
-    tornado.ioloop.IOLoop.instance().start()
+    import textwrap
+    print textwrap.dedent("""
+        Syncrae ~ v%(VERSION)s
+            Debug: %(DEBUG)s
+            Server is running at http://127.0.0.1:%(PORT)s/
+            Quit the server with CTRL-C.
+    """ % settings)
 
+    application.listen(settings.PORT)
+
+    # Allow Ctrl-C to stop the server without the error traceback
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except (KeyboardInterrupt, SystemExit):
+        tornado.ioloop.IOLoop.instance().stop()
+        # Remove the ^C that appears on the same line as your terminal input
+        print ""
 
