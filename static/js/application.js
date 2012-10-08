@@ -13,7 +13,12 @@ webdnd.subscribe('/sessions/new', function(data) {
 webdnd.subscribe('/sessions/key', function(data) {
     webdnd.user.key(data.key);
     webdnd.queue.keyed();
-    console.log("New Key: ", data.key);
+    console.log("new key: ", data.key);
+});
+
+webdnd.subscribe('/sessions/name', function(data) {
+    webdnd.user.name(data.name);
+    $('.type .name').text(webdnd.user.name());
 });
 
 webdnd.subscribe('/sessions/error', function(data) {

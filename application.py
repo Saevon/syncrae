@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
 # Needs to be done first to configure django settings
 from settings import settings
 
 from collections import defaultdict
 from user.session import Session
+from events import startup
 import json
 import logging
 import os
@@ -10,21 +13,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
-
-
-class Event(object):
-    topic = None
-    data = None
-
-    def __init__(self, topic, data):
-        self.topic = topic
-        self.data = data
-
-    def to_json(self):
-        return json.dumps({
-            'topic': self.topic,
-            'data': self.data,
-        })
+from events.event import Event
 
 class EventWebsocket(tornado.websocket.WebSocketHandler):
     listener_topics = defaultdict(set)
@@ -54,8 +43,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.send_key()
 
         # Send the 'New user' event
+        user = startup.user(self)
         event = Event('/sessions/new', {
-            'name': 'Unknown',
+            'name': user['name'],
         })
 
         self._message(event.to_json(),
@@ -113,7 +103,7 @@ class ApplicationHandler(tornado.web.RequestHandler):
         # render mustache templates
         # Perhaps this should happen on server load?
         # Not per request to the page
-        print os.stat('/apps/syncrae/static/js/templates.js')
+        # print os.stat('/apps/syncrae/static/js/templates.js')
 
         import subprocess
         subprocess.call(['handlebars', '/apps/syncrae/static/tmpl/', '-f',

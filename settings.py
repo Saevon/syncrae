@@ -34,7 +34,9 @@ settings = AttrDict({
             'HOST': '',
             'PORT': '',
         },
-    }
+    },
+    'WEBDND_USERNAME': 'syncrae',
+    'WEBDND_PASSWORD': 'intra-app[security]0563EA53F521FEAC87B96.syncrae-pass',
 })
 
 
