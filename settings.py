@@ -12,12 +12,13 @@ class AttrDict(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
+# TODO: maybe an easier way to define them...
 settings = AttrDict({
 
     'STATIC_PATH': os.path.join(os.path.dirname(__file__), 'static'),
     'FAVICON_PATH': os.path.join(os.path.dirname(__file__), 'static/img'),
     'DEBUG': True,
-    'cookie_secret': 'syncrae-secret',
+    'COOKIE_SECRET': 'syncrae-secret',
 
     'ID_COOKIE_NAME': 'webdnd_playid',
 
@@ -37,9 +38,17 @@ settings = AttrDict({
 })
 
 
-# provide Tornado settings (non caps)
-settings.debug = settings.DEBUG
-settings.static_path = settings.STATIC_PATH
+
+
+# provide Tornado settings
+TORNADO_SETTINGS = (
+    'debug',
+    'static_path',
+    'cookie_secret',
+)
+for key in TORNADO_SETTINGS:
+    settings[key.lower()] = settings[key.upper()]
+
 
 # Update django settings
 django_settings.configure(**settings)
