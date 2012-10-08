@@ -9,7 +9,13 @@ div.message {
     font-size: 18px;
     margin-top: 10px;
 }
-div.message.typing .body {
+div.message:hover:not(.type) {
+    background-color: #445;
+}
+div.message.type {
+    margin-top: 0px;
+}
+div.message.type .body {
     color: #666;
     font-weight: normal;
 }
