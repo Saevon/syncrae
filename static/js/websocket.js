@@ -1,18 +1,48 @@
 webdnd.listeners =[];
-webdnd.queue = [];
+webdnd.queue = (function() {
+    var queue = {
+        _queue: [],
+        _keyed: false,
+
+        send: function(payload) {
+            this._queue.push(payload);
+            this.sendall();
+        },
+
+        keyed: function() {
+            this._keyed = true;
+            this.sendall();
+        },
+
+        _send: function(payload) {
+            payload.key = webdnd.user.key();
+            message = JSON.stringify(payload);
+            webdnd.websocket.send(message);
+        },
+
+        sendall: function() {
+            if (this._keyed && webdnd.websocket && webdnd.websocket.readyState == 1) {
+                var _this = this;
+                this._queue.each(function(payload) {
+                    _this._send(payload);
+                });
+                this._queue = [];
+            }
+        }
+    };
+
+    return queue;
+})();
 
 webdnd.websocket = (function() {
-    var websocket = new WebSocket('ws://' + HOST + '/event?key=' + encodeURIComponent(webdnd.user.key()));
+    var websocket = new WebSocket('ws://' + HOST + '/event');
 
     $.extend(websocket, {
         onclose: function(event) {
             // TODO: reestablish connection
         },
         onopen: function(event) {
-            webdnd.queue.each(function(message) {
-                webdnd.websocket.send(message);
-            });
-            webdnd.queue = [];
+            webdnd.queue.sendall();
         },
 
         onmessage: function(event) {
@@ -30,31 +60,19 @@ webdnd.websocket = (function() {
 
 
 webdnd.publish = function(topic, data) {
-    var payload = {'topic': topic, 'data': data, 'key': webdnd.user.key()};
-    var message = JSON.stringify(payload);
-    if (this.websocket && this.websocket.readyState == 1) {
-        this.websocket.send(message);
-    } else {
-        this.queue.push(message);
-    }
+    var payload = {'topic': topic, 'data': data};
+    this.queue.send(payload);
 };
 
 webdnd.subscribe = function(topic, callback) {
     // server side subscription
     this.publish('/subscribe', topic);
 
-    var new_callback = function(data) {
-        if (data.key) {
-            webdnd.user.key(data.key);
-        }
-        callback(data);
-    };
-
     // local subscription
     if(!this.listeners[topic]){
         this.listeners[topic] = [];
     }
-    this.listeners[topic].push(new_callback);
+    this.listeners[topic].push(callback);
 };
 
 window.onbeforeunload = function() {

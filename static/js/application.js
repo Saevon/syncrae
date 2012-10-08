@@ -1,8 +1,5 @@
 
 webdnd.subscribe('/sessions/new', function(data) {
-    webdnd.user.key(data.key);
-    webdnd.user.name(data.name);
-
     data = {name: 'system', body: data.name + ' just joined us'};
     $(Handlebars.templates.message(data))
         .addClass('notification')
@@ -11,6 +8,29 @@ webdnd.subscribe('/sessions/new', function(data) {
         .animate({
             opacity: 1
         });
+});
+
+webdnd.subscribe('/sessions/key', function(data) {
+    webdnd.user.key(data.key);
+    webdnd.queue.keyed();
+    console.log("New Key: ", data.key);
+});
+
+webdnd.subscribe('/sessions/error', function(data) {
+    data = {
+        name: 'system',
+        body: data.error
+    };
+    var message = $(Handlebars.templates.message(data))
+        .css('opacity', 0)
+        .css('position', 'relative')
+        .css('left', '-200px')
+        .appendTo('#messages')
+        .animate({
+            opacity: 1,
+            left: 0
+        });
+
 });
 
 webdnd.subscribe('/messages/new', function(data) {
@@ -57,13 +77,11 @@ $(function() {
 
         // notify that typing has stopped
         webdnd.publish('/messages/stopped-typing', {
-            name: webdnd.user.name(),
-            key: webdnd.user.key()
+            name: webdnd.user.name()
         });
 
         var data = {
             name: webdnd.user.name(),
-            key: webdnd.user.key(),
             body: $(this).find('input[name=body]').val()
         };
 
