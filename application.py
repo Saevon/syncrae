@@ -47,10 +47,13 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
         key = self.get_secure_cookie(settings.ID_COOKIE_NAME)
         if not self.session.login(key):
-            self.reject()
+            return self.reject()
 
         # Save the new key
         # Which coincidentally doesn't change right now :P
+        self.send_key()
+
+        # Send the 'New user' event
         event = Event('/sessions/new', {
             'name': 'Unknown',
         })
@@ -58,10 +61,19 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self._message(event.to_json(),
             EventWebsocket.topic_listeners['/sessions/new'])
 
+    def send_key(self):
+        event = Event('/sessions/key', {
+            'key': self.session.key(),
+        })
+
+        self.write_message(event.to_json())
+
     def reject(self):
-        # TODO: send a message telling them that their key was rejected
-        # then close the connection
-        pass
+        event = Event('/sessions/error', {
+            'error': 'Your gameplay key was wrong, go back to the campaign and try again.',
+        })
+        self.write_message(event.to_json())
+        self.close()
 
     def on_message(self, raw_message):
         message = json.loads(raw_message)
@@ -69,7 +81,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         # Authentication check
         key = message.get('key')
         if not self.session.is_valid(key):
-            return
+            return self.reject()
 
         topic = message.get('topic')
         data = message.get('data')

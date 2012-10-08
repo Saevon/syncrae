@@ -1,12 +1,15 @@
 from django.core.exceptions import ObjectDoesNotExist
 
 from user.models import Game
+import datetime
 
 
 class Session(object):
 
     def __init__(self):
         self.__game = False
+        self.__old = False
+        self.__old_expiry = False
 
     def login(self, key):
         '''
@@ -15,7 +18,6 @@ class Session(object):
         '''
         try:
             self.__game = Game.objects.get(key=key)
-            print self.__game
         except ObjectDoesNotExist:
             return False
 
@@ -36,7 +38,9 @@ class Session(object):
         Removes any expired keys then logs you back in if your session is
         about to expire.
         '''
-        # TODO: add expiry
+        if self.__old_expiry and self.__old_expiry + datetime.timedelta(minutes=1) > datetime.datetime.now():
+            self.__old_expiry = False
+            self.__old = False
 
     def is_valid(self, key):
         '''
@@ -44,14 +48,25 @@ class Session(object):
         '''
         self.clear_expiry()
         return (
-            self.__game
-            and self.__game.key == key
+            (
+                self.__game
+                and self.__game.key == key
+            )
+            or (
+                self.__old
+                and self.__old == key
+            )
         )
 
     def new_key(self):
         '''
         Creates a new key
         '''
+        # Allow the old key to work for a while
+        self.__old = unicode(self.__game.key)
+        self.__old_expiry = datetime.datetime.now()
+
+        # Change the actual key
         self.__game.new_key()
         self.__game.save()
 
