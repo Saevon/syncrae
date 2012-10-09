@@ -1,3 +1,4 @@
+import base64
 import os
 from django.conf import settings as django_settings
 
@@ -40,6 +41,12 @@ settings = AttrDict({
 })
 
 
+settings['WEBDND_AUTH'] = base64.b64encode(
+    '%(username)s:%(password)s' % {
+        'username': settings.WEBDND_USERNAME,
+        'password': settings.WEBDND_PASSWORD,
+    }
+)
 
 
 # provide Tornado settings

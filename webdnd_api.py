@@ -1,6 +1,5 @@
 from settings import settings
 from utils.decorators import cascade
-import base64
 import logging
 import simplejson
 import urllib
@@ -23,12 +22,7 @@ class Api(object):
         data['key'] = self.__key
 
         headers = {
-            'AUTHORIZATION': 'Basic %s' % base64.b64encode(
-                '%(username)s:%(password)s' % {
-                    'username': settings.WEBDND_USERNAME,
-                    'password': settings.WEBDND_PASSWORD,
-                }
-            )
+            'AUTHORIZATION': 'Basic %s' % settings.WEBDND_AUTH,
         }
 
         url_values = urllib.urlencode(data)
