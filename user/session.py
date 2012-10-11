@@ -79,3 +79,9 @@ class Session(object):
         else:
             return ''
 
+    @property
+    def game(self):
+        return self.__game
+
+
+

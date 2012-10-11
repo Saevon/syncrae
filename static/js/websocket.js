@@ -66,7 +66,11 @@ webdnd.publish = function(topic, data) {
 
 webdnd.subscribe = function(topic, callback) {
     // server side subscription
-    this.publish('/subscribe', topic);
+    // Disabled for now since you auto subscribe now
+    // subscriptions are done server side
+    // Perhaps later you would do this to filter messages
+    // you don't care about
+    // this.publish('/subscribe', topic);
 
     // local subscription
     if(!this.listeners[topic]){

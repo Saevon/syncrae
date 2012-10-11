@@ -6,12 +6,13 @@ def user(websocket):
 
     if call.has_error:
         return {
-            'name': 'Unknown'
+            'name': 'Unknown',
+            'cname': 'Unknown Campaign',
         }
 
-    event = Event('/sessions/name', {
-        'name': call.response['name']
-    })
-    websocket.write_message(event.to_json())
+    Event('/sessions/name', {
+        'name': call.response['name'],
+        'cname': call.response['campaign_name'],
+    }).write_message(websocket)
 
     return call.response

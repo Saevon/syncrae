@@ -18,7 +18,10 @@ webdnd.subscribe('/sessions/key', function(data) {
 
 webdnd.subscribe('/sessions/name', function(data) {
     webdnd.user.name(data.name);
+    webdnd.user.cname(data.cname);
+    console.log(data)
     $('.type .name').text(webdnd.user.name());
+    $('head title').text(webdnd.user.cname());
 });
 
 webdnd.subscribe('/sessions/error', function(data) {
