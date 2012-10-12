@@ -12,6 +12,7 @@ import json
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
+import argparse
 
 
 class EventWebsocket(tornado.websocket.WebSocketHandler):
@@ -83,14 +84,54 @@ class ApplicationHandler(tornado.web.RequestHandler):
         self.render('application.html')
 
 
+def cmdline(args=None, version=''):
+    parser = argparse.ArgumentParser(
+        prog='Syncrae',
+        version='%(prog)s ' + version
+    )
+    subparsers = parser.add_subparsers(dest='COMMAND')
+
+    # Start Server
+    parser_runserver = subparsers.add_parser(
+        'start',
+        description='Starts up the Syncrae Server.'
+    )
+    parser_runserver.add_argument(
+        '-l', '--log-level',
+        dest='LOG_LEVEL',
+        nargs='?',
+        action='store',
+        const=argparse.SUPPRESS,
+        default=argparse.SUPPRESS,
+        help='Changes the lowest logged level',
+        metavar='level'
+    )
+    parser_runserver.add_argument(
+        '-f', '--log-file',
+        dest='LOG_FILE',
+        nargs='?',
+        action='store',
+        const=argparse.SUPPRESS,
+        default=argparse.SUPPRESS,
+        help='Selects where to output the logs',
+        metavar='file'
+    )
+
+    # Argument Parsing
+    out = parser.parse_args(args)
+    return out
+
+def merge_cmdline_settings(settings, args):
+    settings.update(args.__dict__)
+
+
 application = tornado.web.Application([
     # Application URI's
     (r'/play', ApplicationHandler),
     (r'/event', EventWebsocket),
 ], **settings)
 
-
-if __name__ == '__main__':
+def start():
     # Template handling
     import subprocess
     logging.info('Generating templates')
@@ -119,4 +160,13 @@ if __name__ == '__main__':
         # Remove the ^C that appears on the same line as your terminal input
         print("")
 
+
+if __name__ == '__main__':
+    merge_cmdline_settings(settings, cmdline())
+
+    commands = {
+        'start': start,
+    }
+
+    commands[settings.COMMAND]()
 
