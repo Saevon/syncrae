@@ -7,6 +7,7 @@ from user.session import Session
 from events import startup
 from events.event import Event
 from events.queue import CampaignQueue
+import logging
 import json
 import tornado.ioloop
 import tornado.web
@@ -91,11 +92,11 @@ application = tornado.web.Application([
 if __name__ == '__main__':
     # Template handling
     import subprocess
-    print('Generating templates')
+    logging.info('Generating templates')
     subprocess.call(['handlebars', '/apps/syncrae/static/tmpl/', '-f',
         '/apps/syncrae/static/js/templates.js'])
-    # import os
-    # print('  >> %s' % os.stat('/apps/syncrae/static/js/templates.js'))
+    import os
+    logging.debug('  >> %s' % os.stat('/apps/syncrae/static/js/templates.js'))
 
 
     # Intro Message
@@ -112,8 +113,9 @@ if __name__ == '__main__':
     # Allow Ctrl-C to stop the server without the error traceback
     try:
         tornado.ioloop.IOLoop.instance().start()
-    except (KeyboardInterrupt, SystemExit):
+    except (KeyboardInterrupt, SystemExit) as err:
         tornado.ioloop.IOLoop.instance().stop()
         # Remove the ^C that appears on the same line as your terminal input
         print("")
+
 

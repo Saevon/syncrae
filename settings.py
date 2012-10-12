@@ -59,5 +59,28 @@ for key in TORNADO_SETTINGS:
     settings[key.lower()] = settings[key.upper()]
 
 
+# logging settings
+import logging
+from logutils.colorize import ColorizingStreamHandler
+
+logger = logging.getLogger()
+settings.LOG_LEVEL = logging.INFO
+settings.LOG_FILE = None
+logger.setLevel(logging.INFO)
+
+# Customize error colors
+# levels to (background, foreground, bold/intense)
+ColorizingStreamHandler.level_map = {
+    logging.DEBUG: (None, 'blue', False),
+    # Use default color for info messages
+    logging.INFO: (None, '', False),
+    logging.WARNING: (None, 'magenta', False),
+    logging.ERROR: (None, 'red', True),
+    logging.CRITICAL: ('red', 'white', True),
+}
+
+logger.addHandler(ColorizingStreamHandler())
+
+
 # Update django settings
 django_settings.configure(**settings)

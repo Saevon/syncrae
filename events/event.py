@@ -1,7 +1,6 @@
 from utils.decorators import cascade
 import json
 import logging
-import datetime
 
 class Event(object):
     topic = None
@@ -11,6 +10,11 @@ class Event(object):
         self.topic = topic
         self.data = data
         self.__json = None
+
+        logging.info(
+            'New Message'
+            + ' - < ' + self.topic + ' >'
+        )
 
     @property
     def json(self):
@@ -26,13 +30,11 @@ class Event(object):
         try:
             listener.write_message(self.json)
         except BaseException as err:
-            logging.error(
+            logging.exception(
                 '#### - Error sending message'
                 + ' - %s'
-                + ' - <' + self.topic + '>'
-                + ' - ' + datetime.datetime.now(),
-                err,
-                exc_info=True
+                + ' - < ' + self.topic + ' >',
+                err
             )
 
 
