@@ -7,4 +7,5 @@
 *.sqlite3
 *.hidden
 static/compressed/
+static/js/templates.js
 index/
