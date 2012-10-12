@@ -69,7 +69,8 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.queue.message(topic, data)
 
     def on_close(self):
-        self.queue.drop(self)
+        if self.queue:
+            self.queue.drop(self)
 
 
 class ApplicationHandler(tornado.web.RequestHandler):
@@ -77,7 +78,7 @@ class ApplicationHandler(tornado.web.RequestHandler):
         pass
 
     def get(self):
-        self.set_secure_cookie('webdnd_playid', self.get_argument('key'))
+        self.set_secure_cookie(settings.ID_COOKIE_NAME, self.get_argument('key'))
 
         self.render('application.html')
 

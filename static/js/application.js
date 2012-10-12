@@ -19,7 +19,6 @@ webdnd.subscribe('/sessions/key', function(data) {
 webdnd.subscribe('/sessions/name', function(data) {
     webdnd.user.name(data.name);
     webdnd.user.cname(data.cname);
-    console.log(data)
     $('.type .name').text(webdnd.user.name());
     $('head title').text(webdnd.user.cname());
 });
@@ -104,12 +103,12 @@ $(function() {
     var typing = false;
     $('#form input[name=body]').keyup(function(e) {
         // notify that typing has started
-        if ($(this).val().length === 0) {
+        if (typing && $(this).val().length === 0) {
             typing = false;
             webdnd.publish('/messages/stopped-typing', {
                 name: webdnd.user.name()
             });
-        } else if ($(this).val().length > 0 && typing === false) {
+        } else if (!typing && $(this).val().length > 0) {
             typing = true;
             webdnd.publish('/messages/started-typing', {
                 name: webdnd.user.name()
