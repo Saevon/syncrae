@@ -5,7 +5,7 @@ import logging
 # Customize error colors
 # levels to (background, foreground, bold/intense)
 ColorizingStreamHandler.level_map = {
-    logging.DEBUG: (None, 'blue', False),
+    logging.DEBUG: (None, 'cyan', False),
     # Use default color for info messages
     logging.INFO: (None, '', False),
     logging.WARNING: (None, 'magenta', False),

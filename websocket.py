@@ -3,44 +3,58 @@ import tornado.web
 import tornado.websocket
 
 from syncrae.events.event import Event
+from syncrae.session import Session
 
 from django.conf import settings
 
-from events import startup
 from events.queue import CampaignQueue
 import logging
 import simplejson
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
+from django.contrib.auth import get_user
+from django.utils.importlib import import_module
+from time import time
+
+logging = logging.getLogger('')
 
 
+class Dummy(object):
+    def __init__(self, session):
+        self.session = session
 
 class EventWebsocket(tornado.websocket.WebSocketHandler):
 
-    def open(self):
+    def get_current_user(self):
+        engine = import_module(settings.SESSION_ENGINE)
         sessionid = self.get_cookie(settings.SESSION_COOKIE_NAME)
 
-        # LOGIN
-        if login:
+        self.webdnd_session = engine.SessionStore(sessionid)
+        request = Dummy(self.webdnd_session)
+
+        return get_user(request)
+
+    def open(self):
+        user = self.get_current_user()
+        if not user or not user.is_authenticated():
             return self.reject()
 
-        self.queue = CampaignQueue.get(self.session.game.campaign_id).listen(self)
+        self.user = user
+        self.session = Session.get(self.user.id)
+        if self.session is None:
+            self.session = Session(self)
+        else:
+            self.session.listen(self)
 
-        # Save the new key
-        # Which coincidentally doesn't change right now :P
-        self.send_key()
+        self.queue = CampaignQueue.get(self.webdnd_session['cid'])
+        self.queue.listen(self)
 
         # Send the 'New user' event
-        user = startup.user(self)
-        self.queue.message('/sessions/new', {
-            'name':  user['name'],
+        self.queue.write_message('/sessions/new', {
+            'name':  self.user.name,
         })
 
-    def send_key(self):
-        Event('/sessions/key', {
-            'key': self.session.key(),
-        }).write_message(self)
 
     def reject(self):
         Event('/sessions/error', {
@@ -49,22 +63,20 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.close()
 
     def on_message(self, raw_message):
-        message = simplejson.loads(raw_message)
-
-        # Authentication check
-        key = message.get('key')
-        if not self.session.is_valid(key):
-            return self.reject()
-
-        topic = message.get('topic')
-        data = message.get('data')
+        try:
+            message = simplejson.loads(raw_message)
+            topic = message['topic']
+            data = message['data']
+        except BaseException as err:
+            logging.exception('Cannot parse message: %s' % raw_message, err)
 
         # emit event to all listeners
         self.queue.message(topic, data)
 
     def on_close(self):
-        if self.queue:
-            self.queue.drop(self)
+        self.queue.drop(self)
+        self.session.drop(self)
+
 
 
 application = None

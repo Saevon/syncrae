@@ -60,8 +60,7 @@ syncrae.publish = function(topic, data) {
 };
 
 syncrae.subscribe = function(topic, callback) {
-    // local subscription
-    // Stores callback functions
+    // local subscription adds a callback functions
     if(!this.listeners[topic]){
         this.listeners[topic] = [];
     }

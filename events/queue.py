@@ -6,12 +6,26 @@ class CampaignQueue(object):
 
     queue = {}
 
-    def __init__(self):
+    def __init__(self, id):
         self.__listeners = defaultdict(set)
         self.__all = set()
+        self.id = id
+
+        CampaignQueue.queue[self.id] = self
+
+    @staticmethod
+    def get(id):
+        if not id in CampaignQueue.queue.keys():
+            return CampaignQueue(id)
+        return CampaignQueue.queue[id]
+
+    @staticmethod
+    def remove(id):
+        if id in CampaignQueue.queue.keys():
+            del CampaignQueue.queue[id]
 
     @cascade
-    def message(self, topic, data):
+    def write_message(self, topic, data):
         listeners = self.listeners(topic)
 
         event = Event(topic, data)
@@ -41,15 +55,8 @@ class CampaignQueue(object):
         for topic in topics:
             self.__listeners[topic].remove(obj)
 
-    @staticmethod
-    def get(id):
-        if not id in CampaignQueue.queue.keys():
-            CampaignQueue.queue[id] = CampaignQueue()
-        return CampaignQueue.queue[id]
-
-    @staticmethod
-    def playing():
-        return CampaignQueue.queue.keys()
+        if len(self.__all) + len(self.__listeners) == 0:
+            CampaignQueue.remove(self.id)
 
         
 
