@@ -56,11 +56,6 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         })
 
 
-    def reject(self):
-        Event('/sessions/error', {
-            'error': 'Your gameplay key was wrong, go back to the campaign and try again.',
-        }).write_message(self)
-        self.close()
 
     def on_message(self, raw_message):
         try:
@@ -70,13 +65,35 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         except BaseException as err:
             logging.exception('Cannot parse message: %s' % raw_message, err)
 
-        # emit event to all listeners
-        self.queue.message(topic, data)
+        if topic in EventWebsocket.TOPICS.keys():
+            if hasattr(self, EventWebsocket.TOPICS[topic]):
+                return getattr(self, EventWebsocket.TOPICS[topic])(data)
+            else:
+                logging.error('Invalid Handler for topic: %s' % topic)
+                return
+        else:
+            # emit event to all listeners
+            self.queue.write_message(topic, data)
 
     def on_close(self):
         self.queue.drop(self)
         self.session.drop(self)
 
+    ##############################################
+    # Topic Handlers
+    ##############################################
+
+    TOPICS = {
+    }
+
+    def reject(self):
+        '''
+        Occurs when the session is rejected
+        '''
+        Event('/sessions/error', {
+            'error': 'Your gameplay key was wrong, go back to the campaign and try again.',
+        }).write_message(self)
+        self.close()
 
 
 application = None
