@@ -17,6 +17,10 @@ ColorizingStreamHandler.level_map = {
 def setup(level=None):
     logger = logging.getLogger()
 
+    # disable all other handlers
+    for h in logger.handlers:
+        logger.removeHandler(h)
+
     if isinstance(level, basestring):
         level = level.upper()
 
