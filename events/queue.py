@@ -1,6 +1,6 @@
 from collections import defaultdict
-from events.event import Event
-from utils.decorators import cascade
+from syncrae.events.event import Event
+from syncrae.utils.decorators import cascade
 
 class CampaignQueue(object):
 

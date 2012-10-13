@@ -1,27 +1,22 @@
-webdnd.listeners =[];
-webdnd.queue = (function() {
+syncrae = {};
+
+syncrae.listeners =[];
+syncrae.queue = (function() {
     var queue = {
         _queue: [],
-        _keyed: false,
 
         send: function(payload) {
             this._queue.push(payload);
             this.sendall();
         },
 
-        keyed: function() {
-            this._keyed = true;
-            this.sendall();
-        },
-
         _send: function(payload) {
-            payload.key = webdnd.user.key();
             message = JSON.stringify(payload);
-            webdnd.websocket.send(message);
+            syncrae.websocket.send(message);
         },
 
         sendall: function() {
-            if (this._keyed && webdnd.websocket && webdnd.websocket.readyState == 1) {
+            if (syncrae.websocket && syncrae.websocket.readyState == 1) {
                 var _this = this;
                 this._queue.each(function(payload) {
                     _this._send(payload);
@@ -34,7 +29,7 @@ webdnd.queue = (function() {
     return queue;
 })();
 
-webdnd.websocket = (function() {
+syncrae.websocket = (function() {
     var websocket = new WebSocket('ws://' + HOST + '/event');
 
     $.extend(websocket, {
@@ -42,13 +37,13 @@ webdnd.websocket = (function() {
             // TODO: reestablish connection
         },
         onopen: function(event) {
-            webdnd.queue.sendall();
+            syncrae.queue.sendall();
         },
 
         onmessage: function(event) {
             var message = JSON.parse(event.data);
-            if (message.topic in webdnd.listeners) {
-                webdnd.listeners[message.topic].each(function(callback) {
+            if (message.topic in syncrae.listeners) {
+                syncrae.listeners[message.topic].each(function(callback) {
                     callback(message.data);
                 });
             }
@@ -59,20 +54,14 @@ webdnd.websocket = (function() {
 })();
 
 
-webdnd.publish = function(topic, data) {
+syncrae.publish = function(topic, data) {
     var payload = {'topic': topic, 'data': data};
     this.queue.send(payload);
 };
 
-webdnd.subscribe = function(topic, callback) {
-    // server side subscription
-    // Disabled for now since you auto subscribe now
-    // subscriptions are done server side
-    // Perhaps later you would do this to filter messages
-    // you don't care about
-    // this.publish('/subscribe', topic);
-
+syncrae.subscribe = function(topic, callback) {
     // local subscription
+    // Stores callback functions
     if(!this.listeners[topic]){
         this.listeners[topic] = [];
     }
@@ -80,5 +69,5 @@ webdnd.subscribe = function(topic, callback) {
 };
 
 window.onbeforeunload = function() {
-    webdnd.websocket.close();
+    syncrae.websocket.close();
 };

@@ -1,4 +1,4 @@
-from utils.decorators import cascade
+from syncrae.utils.decorators import cascade
 import json
 import logging
 

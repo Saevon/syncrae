@@ -1,5 +1,5 @@
-from webdnd_api import Api
-from events.event import Event
+# from webdnd_api import Api
+from syncrae.events.event import Event
 
 def user(websocket):
     call = Api(websocket.session.key(), 'account/user/self')
