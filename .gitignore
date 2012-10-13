@@ -9,3 +9,4 @@
 static/compressed/
 static/js/templates.js
 index/
+local_settings.py
