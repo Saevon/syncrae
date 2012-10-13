@@ -16,6 +16,7 @@ import tornado.websocket
 from django.contrib.auth import get_user
 from django.utils.importlib import import_module
 from time import time
+from functools import wraps
 
 logging = logging.getLogger('')
 
@@ -25,6 +26,20 @@ class Dummy(object):
         self.session = session
 
 class EventWebsocket(tornado.websocket.WebSocketHandler):
+
+    def async(self, func, args=None, kwargs=None):
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
+        # wraps the function to pass the given args
+        @wraps(func)
+        def wrapper():
+            return func(*args, **kwargs)
+
+        # Use tornado's async timer, set to now
+        tornado.ioloop.IOLoop.instance().add_callback(wrapper)
 
     def get_current_user(self):
         engine = import_module(settings.SESSION_ENGINE)
@@ -54,8 +69,6 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.queue.write_message('/sessions/new', {
             'name':  self.user.name,
         })
-
-
 
     def on_message(self, raw_message):
         try:

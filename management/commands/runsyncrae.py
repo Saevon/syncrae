@@ -107,6 +107,8 @@ class Command(BaseCommand):
             tornado.ioloop.IOLoop.instance().stop()
             # Remove the ^C that appears on the same line as your terminal input
             print("")
+        finally:
+            tornado.ioloop.IOLoop.instance().close()
 
 
 
