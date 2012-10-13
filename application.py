@@ -83,6 +83,13 @@ class ApplicationHandler(tornado.web.RequestHandler):
 
         self.render('application.html')
 
+application = tornado.web.Application([
+    # Application URI's
+    (r'/play', ApplicationHandler),
+    (r'/event', EventWebsocket),
+], **settings)
+
+
 
 def cmdline(args=None, version=''):
     parser = argparse.ArgumentParser(
@@ -117,19 +124,35 @@ def cmdline(args=None, version=''):
         metavar='file'
     )
 
+    # Setup
+    parser_setup = subparsers.add_parser(
+        'setup',
+        description='Setup Syncrae.'
+    )
+    parser_setup.add_argument(
+        '-e', '--env',
+        dest='ENV_LOCATION',
+        nargs='?',
+        action='store',
+        const='../syncrae-env',
+        default=argparse.SUPPRESS,
+        help='Install an environment for syncrae, and all the required packages. If there is already an env in that location uses it for the other setup commands.',
+        metavar='location'
+    )
+    parser_setup.add_argument(
+        '-p', '--packages',
+        dest='PACKAGES',
+        action='store_true',
+        default=False,
+        halp='Upgrades the packages to the required set. Note: this will install them in the current environment.'
+    )
+
     # Argument Parsing
     out = parser.parse_args(args)
     return out
 
 def merge_cmdline_settings(settings, args):
     settings.update(args.__dict__)
-
-
-application = tornado.web.Application([
-    # Application URI's
-    (r'/play', ApplicationHandler),
-    (r'/event', EventWebsocket),
-], **settings)
 
 def start():
     # Template handling
@@ -155,10 +178,13 @@ def start():
     # Allow Ctrl-C to stop the server without the error traceback
     try:
         tornado.ioloop.IOLoop.instance().start()
-    except (KeyboardInterrupt, SystemExit) as err:
+    except (KeyboardInterrupt, SystemExit):
         tornado.ioloop.IOLoop.instance().stop()
         # Remove the ^C that appears on the same line as your terminal input
         print("")
+
+def setup():
+    pass
 
 
 if __name__ == '__main__':
@@ -166,6 +192,7 @@ if __name__ == '__main__':
 
     commands = {
         'start': start,
+        'setup': setup,
     }
 
     commands[settings.COMMAND]()

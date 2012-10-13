@@ -38,6 +38,9 @@ settings = AttrDict({
     },
     'WEBDND_USERNAME': 'syncrae',
     'WEBDND_PASSWORD': 'intra-app[security]0563EA53F521FEAC87B96.syncrae-pass',
+
+    'LOG_LEVEL': 'INFO',
+    'LOG_FILE': None,
 })
 
 
@@ -64,9 +67,7 @@ import logging
 from logutils.colorize import ColorizingStreamHandler
 
 logger = logging.getLogger()
-settings.LOG_LEVEL = logging.INFO
-settings.LOG_FILE = None
-logger.setLevel(logging.INFO)
+logger.setLevel(settings.LOG_LEVEL)
 
 # Customize error colors
 # levels to (background, foreground, bold/intense)
