@@ -121,6 +121,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     TOPICS = {
         '/messages': 'message',
+        '/terminal/command': 'terminal',
     }
 
     def reject(self):
@@ -139,6 +140,17 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     def hdl_message(self, data):
         data['name'] = self.user.name
+
+    def hdl_terminal(self, data):
+        logging.warn('Awesome Terminal Action!! ... does not exist :P')
+        logging.info('New Command - %s' % data['cmd'])
+
+        Event('/terminal/result', {
+            'cmd': data['cmd'],
+            'log': 'Terminal commands do not work right now',
+            'level': 'warning',
+        }).write_message(self)
+
 
 application = None
 

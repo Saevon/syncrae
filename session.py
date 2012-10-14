@@ -25,7 +25,7 @@ class Session(object):
         Session.all[self.user.id] = self
         self.id = self.user.id
 
-        logging.info('New Session - %s %s' % (self.user.id, self.user.name))
+        logging.info('New Session - %s:%s' % (self.user.id, self.user.name))
 
     @staticmethod
     def get(uid):
