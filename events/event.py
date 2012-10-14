@@ -2,6 +2,8 @@ from syncrae.utils.decorators import cascade
 import json
 import logging
 
+logging = logging.getLogger()
+
 class Event(object):
     topic = None
     data = None
@@ -29,12 +31,7 @@ class Event(object):
     def write_message(self, listener):
         try:
             listener.write_message(self.json)
-        except BaseException as err:
-            logging.exception(
-                '#### - Error sending message'
-                + ' - %s'
-                + ' - < ' + self.topic + ' >',
-                err
-            )
+        except BaseException:
+            logging.exception('Error sending message - < %s >' % self.topic)
 
 

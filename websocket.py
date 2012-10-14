@@ -65,33 +65,62 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             'name':  self.user.name,
         })
 
+    def on_close(self):
+        self.queue.drop(self)
+        self.session.drop(self)
+
     def on_message(self, raw_message):
         try:
             message = simplejson.loads(raw_message)
             topic = message['topic']
             data = message['data']
-        except BaseException as err:
-            logging.exception('Cannot parse message: %s' % raw_message, err)
+        except BaseException:
+            logging.exception('Cannot parse message: ' + raw_message)
 
-        if topic in EventWebsocket.TOPICS.keys():
-            if hasattr(self, EventWebsocket.TOPICS[topic]):
-                return getattr(self, EventWebsocket.TOPICS[topic])(data)
-            else:
-                logging.error('Invalid Handler for topic: %s' % topic)
-                return
+        self.handle_topic(topic, data)
+
+
+    ##############################################
+    # Topic Handling Code
+    ##############################################
+    def handle_topic(self, topic, data):
+        self.__full = topic
+
+        topic = topic.strip().strip('/')
+        parts = topic.split('/')
+
+        # call every base handler
+        for l in range(len(parts) - 1):
+            sub_topic = '/%s' % '/'.join(parts[:l + 1])
+            self.call(sub_topic, data)
+
+        # Final Handler is special, this is the one that actually counts
+        # if it fails we use the default handler
+        if not self.call(self.__full, data):
+            self.hdl_default(self.__full, data)
+
+    def call(self, topic, data):
+        '''
+        calls the relevant handler
+        '''
+        if not topic in EventWebsocket.TOPICS.keys():
+            return False
+
+        handler = 'hdl_' + EventWebsocket.TOPICS[topic]
+        if hasattr(self, handler):
+            getattr(self, handler)(data)
+            return True
         else:
-            # emit event to all listeners
-            self.queue.write_message(topic, data)
+            logging.error('Invalid Handler for topic: < %s > - %s:%s' % (self.__full, topic, handler))
+            return False
 
-    def on_close(self):
-        self.queue.drop(self)
-        self.session.drop(self)
 
     ##############################################
     # Topic Handlers
     ##############################################
 
     TOPICS = {
+        '/messages': 'message',
     }
 
     def reject(self):
@@ -103,6 +132,13 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         }).write_message(self)
         self.close()
 
+    def hdl_default(self, topic, data):
+        # emit event to all listeners
+        # using the original full topic
+        self.queue.write_message(topic, data)
+
+    def hdl_message(self, data):
+        data['name'] = self.user.name
 
 application = None
 

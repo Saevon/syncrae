@@ -55,6 +55,9 @@ syncrae.websocket = (function() {
 
 
 syncrae.publish = function(topic, data) {
+    if (data === undefined) {
+        data = {};
+    }
     var payload = {'topic': topic, 'data': data};
     this.queue.send(payload);
 };
