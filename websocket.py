@@ -1,27 +1,22 @@
-import tornado.ioloop
-import tornado.web
-import tornado.websocket
-
-from syncrae.events.event import Event
-from syncrae.session import Session
-
 from django.conf import settings
+from django.contrib.auth import get_user
+from django.utils.importlib import import_module
 
 from events.queue import CampaignQueue
+from functools import wraps
+from syncrae.events.event import Event
+from syncrae.session import Session
+from time import sleep
 import logging
 import simplejson
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
-from django.contrib.auth import get_user
-from django.utils.importlib import import_module
-from time import time
-from functools import wraps
 
 logging = logging.getLogger('')
 
 
-class Dummy(object):
+class RequestDummy(object):
     def __init__(self, session):
         self.session = session
 
@@ -46,7 +41,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         sessionid = self.get_cookie(settings.SESSION_COOKIE_NAME)
 
         self.webdnd_session = engine.SessionStore(sessionid)
-        request = Dummy(self.webdnd_session)
+        request = RequestDummy(self.webdnd_session)
 
         return get_user(request)
 
