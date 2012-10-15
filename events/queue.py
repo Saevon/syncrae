@@ -43,20 +43,18 @@ class CampaignQueue(object):
     def listen(self, obj, topics=True):
         if topics == True:
             self.__all.add(obj)
-            return
-        for topic in topics:
-            self.__listeners[topic].add(obj)
+        else:
+            for topic in topics:
+                self.__listeners[topic].add(obj)
 
     @cascade
     def drop(self, obj, topics=True):
         self.__all.remove(obj)
-        if topics == True:
-            return
         for topic in topics:
             self.__listeners[topic].remove(obj)
 
         if len(self.__all) + len(self.__listeners) == 0:
             CampaignQueue.remove(self.id)
 
-        
+
 

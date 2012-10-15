@@ -61,13 +61,20 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.queue.listen(self)
 
         # Send the 'New user' event
-        self.queue.write_message('/sessions/new', {
+        self.queue.write_message('/sessions/status', {
             'name':  self.user.name,
+            'status': 'online',
         })
 
     def on_close(self):
         self.queue.drop(self)
         self.session.drop(self)
+
+        # Make sure the campaign group knows you logged out
+        self.queue.write_message('/sessions/status', {
+            'name': self.user.name,
+            'status': 'offline',
+        })
 
     def on_message(self, raw_message):
         try:
