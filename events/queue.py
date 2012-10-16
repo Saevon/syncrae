@@ -50,8 +50,9 @@ class CampaignQueue(object):
     @cascade
     def drop(self, obj, topics=True):
         self.__all.remove(obj)
-        for topic in topics:
-            self.__listeners[topic].remove(obj)
+        if topics != True:
+            for topic in topics:
+                self.__listeners[topic].remove(obj)
 
         if len(self.__all) + len(self.__listeners) == 0:
             CampaignQueue.remove(self.id)
