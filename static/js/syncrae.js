@@ -29,14 +29,65 @@ syncrae.queue = (function() {
     return queue;
 })();
 
-syncrae.websocket = (function() {
+syncrae.retry_timer = (function() {
+    // Time in sec
+    var timer = 10;
+    var _timer = 0;
+
+    var _listeners = [];
+
+    var retry_timer = {
+        time: function() {
+            return _timer;
+        },
+        timeout: function(val) {
+            if (val !== undefined) {
+                timer = val;
+            } else {
+                return timer;
+            }
+        },
+        count: function() {
+            _timer -= 1;
+            var length = _listeners.length;
+            for (var i=0; i< length; i++) {
+                _listeners[i](_timer);
+            }
+        },
+        reset: function() {
+            _timer = timer;
+        },
+        listen: function(callback) {
+            _listeners.push(callback);
+        }
+    };
+
+    return retry_timer;
+})();
+
+syncrae.connect = function(retry) {
+    // Block connection attempts unless they're past the re-connect timer
+    if (syncrae.retry_timer.time() > 0) {
+        syncrae.retry_timer.count();
+        if (retry === true) {
+            setTimeout(function() {
+                syncrae.connect(true);
+            }, 1000);
+        }
+        return;
+    } else {
+        syncrae.retry_timer.reset();
+    }
+
     var websocket = new WebSocket('ws://' + HOST + '/event');
 
     $.extend(websocket, {
         onclose: function(event) {
-            // TODO: reestablish connection
+            syncrae.off(true);
+            syncrae.connect(true);
         },
         onopen: function(event) {
+            syncrae.on(true);
             syncrae.queue.sendall();
         },
 
@@ -50,9 +101,38 @@ syncrae.websocket = (function() {
         }
     });
 
-    return websocket;
-})();
+    syncrae.websocket = websocket;
+};
+syncrae.connect();
 
+syncrae.on = (function() {
+    var _callbacks = [];
+    var on = function(callback) {
+        if (callback === true) {
+            var length = _callbacks.length;
+            for (var i=0; i < length; i++) {
+                _callbacks[i]();
+            }
+        } else {
+            _callbacks.push(callback);
+        }
+    };
+    return on;
+})();
+syncrae.off = (function() {
+    var _callbacks = [];
+    var off = function(callback) {
+        if (callback === true) {
+            var length = _callbacks.length;
+            for (var i=0; i < length; i++) {
+                _callbacks[i]();
+            }
+        } else {
+            _callbacks.push(callback);
+        }
+    };
+    return off;
+})();
 
 syncrae.publish = function(topic, data) {
     if (data === undefined) {
