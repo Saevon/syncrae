@@ -150,14 +150,66 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         data['name'] = self.user.name
 
     def hdl_terminal(self, data):
-        logging.warn('Awesome Terminal Action!! ... does not exist :P')
-        logging.info('New Command - %s' % data['cmd'])
+        full_cmd = data.get('cmd')
+        cmd = full_cmd.split()
+        cmd, args = cmd[0], ' '.join(cmd[1:])
 
+        if cmd is None:
+            return
+        elif cmd not in EventWebsocket.COMMANDS.keys():
+            Event('/terminal/result', {
+                'level': 'error',
+                'log': 'Invalid Command: `%s`' % full_cmd,
+            }).write_message(self)
+            return
+
+        # Return the command to the client to state that it was recieved
         Event('/terminal/result', {
-            'cmd': data['cmd'],
-            'log': 'Terminal commands do not work right now',
-            'level': 'warning',
+            'cmd': True,
+            'level': 'cmd',
+            'log': full_cmd,
         }).write_message(self)
+
+        # only log accepted commands
+        logging.info('New Command - %s' % full_cmd)
+
+        handler = 'term_' + EventWebsocket.COMMANDS[cmd]['handler']
+        if hasattr(self, handler):
+            getattr(self, handler)(args)
+            return
+        else:
+            logging.error('Invalid Handler for cmd: < %s > - %s:%s' % (self.__full, full_cmd, handler))
+            return
+
+    ##############################################
+    # Terminal
+    ##############################################
+
+    COMMANDS = {
+        'colors': {
+            'handler': 'color_test',
+        },
+        'echo': {
+            'handler': 'echo',
+        }
+    }
+
+    def terminal_write(self, log, level='info'):
+        Event('/terminal/result', {
+            'level': level,
+            'log': log or ' ',  # &nbsp;
+        }).write_message(self)
+
+    def term_color_test(self, cmd):
+        self.terminal_write('Color Test:')
+
+        levels = ['cmd', 'normal', 'info', 'warn', 'error', 'critical', 'muted']
+
+        for level in levels:
+            self.terminal_write(level=level, log=" >> %s" % level)
+
+    def term_echo(self, cmd):
+        self.terminal_write(cmd, level='normal')
 
 
 application = None
