@@ -66,14 +66,16 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         })
 
     def on_close(self):
-        self.queue.drop(self)
-        self.session.drop(self)
+        if self.session is not None:
+            self.session.drop(self)
 
-        # Make sure the campaign group knows you logged out
-        self.queue.write_message('/sessions/status', {
-            'name': self.user.name,
-            'status': 'offline',
-        })
+        if self.queue is not None:
+            self.queue.drop(self)
+            # Make sure the campaign group knows you logged out
+            self.queue.write_message('/sessions/status', {
+                'name': self.user.name,
+                'status': 'offline',
+            })
 
     def on_message(self, raw_message):
         try:
