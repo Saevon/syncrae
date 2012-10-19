@@ -53,6 +53,7 @@ syncrae.retry_timer = (function() {
             for (var i=0; i< length; i++) {
                 _listeners[i](_timer);
             }
+            return true;
         },
         reset: function() {
             _timer = timer;
@@ -69,7 +70,8 @@ syncrae.connect = function(retry) {
     // Block connection attempts unless they're past the re-connect timer
     if (syncrae.retry_timer.time() > 0) {
         syncrae.retry_timer.count();
-        if (retry === true) {
+        // if count() returns false, the counter has just been disabled
+        if (syncrae.retry_timer.count() && retry === true) {
             setTimeout(function() {
                 syncrae.connect(true);
             }, 1000);
