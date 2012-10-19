@@ -30,9 +30,19 @@ syncrae.queue = (function() {
 })();
 
 syncrae.retry_timer = (function() {
-    // Time in sec
-    var timer = 10;
+    // Time array
+    var timer = [
+        // Format: time=secs, count=times to use this time
+        // -1 means infinity
+        {time: 2, count: 2},
+        {time: 10, count: 30},
+        {time: 60, count: 10},
+        {time: -1, count: -1}
+    ];
+    var left = $.extend([], timer);
     var _timer = 0;
+
+    var disabled = false;
 
     var _listeners = [];
 
@@ -48,6 +58,10 @@ syncrae.retry_timer = (function() {
             }
         },
         count: function() {
+            if (disabled) {
+                return false;
+            }
+
             _timer -= 1;
             var length = _listeners.length;
             for (var i=0; i< length; i++) {
@@ -56,7 +70,29 @@ syncrae.retry_timer = (function() {
             return true;
         },
         reset: function() {
-            _timer = timer;
+            disabled = false;
+            left = $.extend([], timer);
+
+            this.trying();
+        },
+        trying: function() {
+            if (left[0] === undefined) {
+                disabled = true;
+                return;
+            }
+
+            _timer = left[0].time;
+
+            if (left[0].count != -1) {
+                left[0].count -= 1;
+            }
+            if (left[0].count === 0) {
+                left.shift();
+            }
+
+            if (_timer == -1) {
+                disabled = true;
+            }
         },
         listen: function(callback) {
             _listeners.push(callback);
@@ -77,7 +113,7 @@ syncrae.connect = function(retry) {
         }
         return;
     } else {
-        syncrae.retry_timer.reset();
+        syncrae.retry_timer.trying();
     }
 
     var websocket = new WebSocket('ws://' + HOST + '/event');
@@ -88,6 +124,7 @@ syncrae.connect = function(retry) {
             syncrae.connect(true);
         },
         onopen: function(event) {
+            syncrae.retry_timer.reset();
             syncrae.on(true);
             syncrae.queue.sendall();
         },
