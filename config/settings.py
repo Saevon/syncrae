@@ -7,7 +7,8 @@ SYNCRAE_TORNADO_SETTINGS = {
 }
 
 
-SYNCRAE_VERSION = '0.1 BETA'
+# format: 'major.minor.bug name'
+SYNCRAE_VERSION = '0.1.0 BETA'
 
 # Loging info
 SYNCRAE_LOG_LEVEL = 'INFO'
