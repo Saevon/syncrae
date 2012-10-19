@@ -6,7 +6,6 @@ from events.queue import CampaignQueue
 from functools import wraps
 from syncrae.events.event import Event
 from syncrae.session import Session
-from time import sleep
 import logging
 import simplejson
 import tornado.ioloop
