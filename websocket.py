@@ -156,19 +156,20 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
     def hdl_terminal(self, data):
         full_cmd = data.get('cmd')
         cmd = full_cmd.split()
-        cmd, args = cmd[0], ' '.join(cmd[1:])
 
-        if cmd is None:
+        if len(cmd) == 0:
             return
-        elif cmd not in EventWebsocket.COMMANDS.keys():
+        elif cmd[0] not in EventWebsocket.COMMANDS.keys():
             Event('/terminal/result', {
                 'level': 'error',
                 'log': 'Invalid Command: `%s`' % full_cmd,
             }).write_message(self)
             return
 
+        cmd, args = cmd[0], ' '.join([] if len(cmd) <= 1 else cmd[1:])
+
         # Store a log of the command
-        HistoryLog.new(full_cmd)
+        HistoryLog.new(uid=self.user.id, cid=self.queue.id, cmd=full_cmd)
 
         # Return the command to the client to state that it was recieved
         Event('/terminal/result', {
