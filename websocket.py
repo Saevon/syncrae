@@ -2,6 +2,8 @@ from django.conf import settings
 from django.contrib.auth import get_user
 from django.utils.importlib import import_module
 
+from webdnd.player.models.terminal import HistoryLog
+
 from events.queue import CampaignQueue
 from functools import wraps
 from syncrae.events.event import Event
@@ -65,11 +67,13 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             'status': 'online',
         })
 
+        self.async(self.terminal_startup)
+
     def on_close(self):
-        if self.session is not None:
+        if hasattr(self, 'session') and self.session is not None:
             self.session.drop(self)
 
-        if self.queue is not None:
+        if hasattr(self, 'queue') and self.queue is not None:
             self.queue.drop(self)
             # Make sure the campaign group knows you logged out
             self.queue.write_message('/sessions/status', {
@@ -163,6 +167,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             }).write_message(self)
             return
 
+        # Store a log of the command
+        HistoryLog.new(full_cmd)
+
         # Return the command to the client to state that it was recieved
         Event('/terminal/result', {
             'cmd': True,
@@ -181,6 +188,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             logging.error('Invalid Handler for cmd: < %s > - %s:%s' % (self.__full, full_cmd, handler))
             return
 
+
     ##############################################
     # Terminal
     ##############################################
@@ -193,6 +201,11 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             'handler': 'echo',
         }
     }
+
+    def terminal_startup(self):
+        Event('/terminal/history/campaign', {
+            'history': [h.cmd for h in HistoryLog.get_cmds(self.user.id, self.queue.id, limit=100)],
+        }).write_message(self)
 
     def terminal_write(self, log, level='info'):
         Event('/terminal/result', {
