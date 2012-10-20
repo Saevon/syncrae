@@ -35,7 +35,7 @@ syncrae.retry_timer = (function() {
         // Format: time=secs, count=times to use this time
         // -1 means infinity
         {time: 2, count: 2},
-        {time: 10, count: 30},
+        {time: 10, count: 6},
         {time: 60, count: 10},
         {time: -1, count: -1}
     ];
@@ -58,26 +58,29 @@ syncrae.retry_timer = (function() {
             }
         },
         count: function() {
-            if (disabled) {
-                return false;
+            if (!disabled) {
+                _timer -= 1;
             }
-
-            _timer -= 1;
+            this.tell();
+            return !disabled;
+        },
+        tell: function() {
             var length = _listeners.length;
             for (var i=0; i< length; i++) {
                 _listeners[i](_timer);
             }
-            return true;
         },
         reset: function() {
             disabled = false;
             left = $.extend([], timer);
 
-            this.trying();
+            this.tell();
         },
         trying: function() {
-            if (left[0] === undefined) {
+            if (left[0] === undefined || left[0].time <= -1) {
                 disabled = true;
+                _timer = '∞';
+                this.tell();
                 return;
             }
 
@@ -88,10 +91,6 @@ syncrae.retry_timer = (function() {
             }
             if (left[0].count === 0) {
                 left.shift();
-            }
-
-            if (_timer == -1) {
-                disabled = true;
             }
         },
         listen: function(callback) {
@@ -104,7 +103,8 @@ syncrae.retry_timer = (function() {
 
 syncrae.connect = function(retry) {
     // Block connection attempts unless they're past the re-connect timer
-    if (syncrae.retry_timer.time() > 0) {
+    var time = syncrae.retry_timer.time();
+    if (typeof(time) == 'string' || time > 0) {
         // if count() returns false, the counter has just been disabled
         if (syncrae.retry_timer.count() && retry === true) {
             setTimeout(function() {
