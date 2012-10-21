@@ -78,9 +78,7 @@ syncrae.retry_timer = (function() {
         },
         trying: function() {
             if (left[0] === undefined || left[0].time <= -1) {
-                disabled = true;
-                _timer = '∞';
-                this.tell();
+                this.disable();
                 return;
             }
 
@@ -95,6 +93,11 @@ syncrae.retry_timer = (function() {
         },
         listen: function(callback) {
             _listeners.push(callback);
+        },
+        disable: function() {
+            disabled = true;
+            _timer = '∞';
+            this.tell();
         }
     };
 
