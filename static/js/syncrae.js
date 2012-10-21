@@ -1,6 +1,8 @@
 syncrae = {};
 
-syncrae.listeners =[];
+syncrae.listeners = {
+    '/': []
+};
 syncrae.queue = (function() {
     var queue = {
         _queue: [],
@@ -138,11 +140,12 @@ syncrae.connect = function(retry) {
                 syncrae.listeners[message.topic].each(function(callback) {
                     callback(message.data);
                 });
-                // Don't forget the base handler
-                syncrae.listeners['/'].each(function(callback) {
-                    callback(message.data);
-                });
             }
+
+            // Don't forget the base handler
+            syncrae.listeners['/'].each(function(callback) {
+                callback(message.data);
+            });
         }
     });
 
