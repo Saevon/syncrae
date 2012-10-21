@@ -142,7 +142,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         '''
         Event('/sessions/error', {
             'error': 'Your gameplay key was wrong, go back to the campaign and try again.',
-        }).write_message(self)
+        }, err='5101').write_message(self)
         self.close()
 
     def hdl_default(self, topic, data):

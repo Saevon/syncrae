@@ -1,3 +1,4 @@
+from django.conf import settings
 from syncrae.utils.decorators import cascade
 import json
 import logging
@@ -8,10 +9,14 @@ class Event(object):
     topic = None
     data = None
 
-    def __init__(self, topic, data):
+    def __init__(self, topic, data, err=False):
         self.topic = topic
         self.data = data
         self.__json = None
+
+        if not err is False:
+            self.data['err_code'] = err
+            self.data['err_msg'] = settings.SYNCRAE_ERR_CODES[err]
 
         logging.info(
             'New Message'
