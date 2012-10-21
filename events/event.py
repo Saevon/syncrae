@@ -20,7 +20,10 @@ class Event(object):
 
         logging.info(
             'New Message'
-            + ' - < ' + self.topic + ' >'
+            + ' - < %s >' % self.topic
+            + ('' if not err else ' - ERR: < %s > %s' % (
+                err, settings.SYNCRAE_ERR_CODES[err]
+            ))
         )
 
     @property
