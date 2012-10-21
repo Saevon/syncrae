@@ -200,6 +200,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         },
         'echo': {
             'handler': 'echo',
+        },
+        'error': {
+            'handler': 'error',
         }
     }
 
@@ -208,11 +211,18 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             'history': [h.cmd for h in HistoryLog.get_cmds(self.user.id, self.queue.id, limit=100)],
         }).write_message(self)
 
-    def terminal_write(self, log, level='info'):
+    def terminal_write(self, log, level='info', err=False):
         Event('/terminal/result', {
             'level': level,
             'log': log or ' ',  # &nbsp;
-        }).write_message(self)
+        }, err=err).write_message(self)
+
+    def terminal_err(self, err, level=None):
+        data = {}
+        if not level is None:
+            data['level'] = level
+
+        Event('/terminal/error', data, err=err).write_message(self)
 
     def term_color_test(self, cmd):
         self.terminal_write('Color Test:')
@@ -224,6 +234,12 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     def term_echo(self, cmd):
         self.terminal_write(cmd, level='normal')
+
+    def term_error(self, cmd):
+        if len(cmd) > 1 and cmd in settings.SYNCRAE_ERR_CODES:
+            self.terminal_err(level='error', err=cmd)
+        else:
+            self.terminal_write('Invalid err code.', level='error')
 
 
 application = None
