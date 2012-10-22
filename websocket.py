@@ -162,7 +162,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         elif cmd[0] not in EventWebsocket.COMMANDS.keys():
             Event('/terminal/result', {
                 'level': 'error',
-                'log': 'Invalid Command: `%s`' % full_cmd,
+                'text': 'Invalid Command: `%s`' % full_cmd,
             }).write_message(self)
             return
 
@@ -175,7 +175,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         Event('/terminal/result', {
             'cmd': True,
             'level': 'cmd',
-            'log': full_cmd,
+            'text': full_cmd,
         }).write_message(self)
 
         # only log accepted commands
@@ -211,10 +211,10 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             'history': [h.cmd for h in HistoryLog.get_cmds(self.user.id, self.queue.id, limit=100)],
         }).write_message(self)
 
-    def terminal_write(self, log, level='info', err=False):
+    def terminal_write(self, text, level='info', err=False):
         Event('/terminal/result', {
             'level': level,
-            'log': log or ' ',  # &nbsp;
+            'text': text or ' ',  # &nbsp;
         }, err=err).write_message(self)
 
     def terminal_err(self, err, level=None):
@@ -230,7 +230,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         levels = ['cmd', 'normal', 'info', 'warn', 'error', 'critical', 'muted']
 
         for level in levels:
-            self.terminal_write(level=level, log=" >> %s" % level)
+            self.terminal_write(level=level, text=" >> %s" % level)
 
     def term_echo(self, cmd):
         self.terminal_write(cmd, level='normal')
