@@ -14,8 +14,6 @@ SYNCRAE_VERSION = '0.2.0 BETA'
 SYNCRAE_LOG_LEVEL = 'INFO'
 SYNCRAE_LOG_FILE = None
 
-# SYNCRAE_ENV_LOCATION = '../../syncrae-env'
-
 
 SYNCRAE_ERR_CODES = {
     # All err codes start with a '5' to represent Syncrae

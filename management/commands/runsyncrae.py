@@ -11,7 +11,7 @@ import tornado.ioloop
 def cmdline(args=None, version=''):
     parser = argparse.ArgumentParser(
         prog='Syncrae',
-        version='%(prog)s ' + version
+        version='%(prog)s ' + version,
     )
 
     parser.add_argument(
@@ -21,7 +21,7 @@ def cmdline(args=None, version=''):
         action='store',
         default=False,
         help='Changes the lowest logged level',
-        metavar='level'
+        metavar='level',
     )
     parser.add_argument(
         '-f', '--log-file',
@@ -30,18 +30,15 @@ def cmdline(args=None, version=''):
         action='store',
         default=False,
         help='Selects where to output the logs',
-        metavar='file'
+        metavar='file',
     )
 
     parser.add_argument(
-        '-e', '--env',
-        dest='SYNCRAE_ENV_LOCATION',
-        nargs='?',
-        action='store',
-        const='../syncrae-env',
+        '-o', '--host', '--open',
+        dest='SYNCRAE_HOST',
+        action='store_true',
         default=False,
-        help='The environment to use to run the Sycrae server.',
-        metavar='location'
+        help='Enables outside hosting (0.0.0.0)',
     )
 
     # Argument Parsing
@@ -60,8 +57,6 @@ class Command(BaseCommand):
         argv = argv[2:]
         args = cmdline(args=argv, version=settings.SYNCRAE_VERSION)
 
-        if args.SYNCRAE_ENV_LOCATION:
-            settings.SYNCRAE_ENV_LOCATION = args.SYNCRAE_ENV_LOCATION
         if args.SYNCRAE_LOG_FILE:
             settings.SYNCRAE_LOG_FILE = args.SYNCRAE_LOG_FILE[0]
         level = args.SYNCRAE_LOG_LEVEL
@@ -73,6 +68,8 @@ class Command(BaseCommand):
                 pass
             settings.SYNCRAE_LOG_LEVEL = level
 
+        settings.SYNCRAE_HOST = '0.0.0.0' if args.SYNCRAE_HOST else '127.0.0.1'
+
         self.handle()
 
     def handle(self, *args, **options):
@@ -82,22 +79,26 @@ class Command(BaseCommand):
 
 
     def runserver(self):
+        import tornado.options
+
         # Intro Message
         import textwrap
         logging.info(textwrap.dedent("""
             Syncrae ~ v%(version)s
                 Debug: %(debug)s
-                Server is running at http://127.0.0.1:%(port)s/
+                Server is running at http://%(host)s:%(port)s/
                 Quit the server with CTRL-C.
         """ % {
             'version': settings.SYNCRAE_VERSION,
             'debug': settings.DEBUG,
             'port': settings.SYNCRAE_PORT,
+            'host': settings.SYNCRAE_HOST,
         }))
 
         get_app({
             'debug': settings.DEBUG,
             'cookie_secret': settings.SECRET_KEY,
+            'host': settings.SYNCRAE_HOST,
         }).listen(settings.SYNCRAE_PORT)
 
         # Allow Ctrl-C to stop the server without the error traceback
