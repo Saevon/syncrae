@@ -3,6 +3,7 @@ from django.contrib.auth import get_user
 from django.utils.importlib import import_module
 
 from webdnd.player.models.terminal import HistoryLog
+from webdnd.player.models.roll import roll_text
 
 from events.queue import CampaignQueue
 from functools import wraps
@@ -152,6 +153,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     def hdl_message(self, data):
         data['name'] = self.user.name
+        data['msg'] = roll_text(data['msg'])
 
     def hdl_terminal(self, data):
         full_cmd = data.get('cmd')
@@ -203,6 +205,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         },
         'error': {
             'handler': 'error',
+        },
+        'roll': {
+            'handler': 'roll',
         }
     }
 
@@ -240,6 +245,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             self.terminal_err(level='error', err=cmd)
         else:
             self.terminal_write('Invalid err code.', level='error')
+
+    def term_roll(self, cmd):
+        self.terminal_write(roll_text(cmd))
 
 
 application = None
