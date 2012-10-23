@@ -36,7 +36,7 @@ syncrae.retry_timer = (function() {
     var timer = [
         // Format: time=secs, count=times to use this time
         // -1 means infinity
-        {time: 2, count: 2},
+        {time: 5, count: 2},
         {time: 10, count: 6},
         {time: 60, count: 10},
         {time: -1, count: -1}
