@@ -5,7 +5,7 @@ from django.utils.importlib import import_module
 from webdnd.player.models.roll import roll_text
 from webdnd.player.models.campaigns import Campaign
 
-from events.queue import CampaignQueue, ChatQueue
+from events.queue import CampaignQueue, ChatQueue, CharacterQueue
 from functools import wraps
 from syncrae.events.event import Event
 from syncrae.session import Session
@@ -174,9 +174,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.queue.write_message(topic, data)
 
     def hdl_msg_new(self, data):
-        chid = data.get('chid')
-        if chid:
-            ChatQueue.get(chid).write_message('/messages/new', data)
+        chatid = data.get('chatid')
+        if chatid:
+            ChatQueue.get(chatid).write_message('/messages/new', data)
         else:
             self.hdl_default('/messages/new', data)
 

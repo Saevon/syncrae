@@ -128,4 +128,8 @@ class ChatQueue(Queue):
             'id': self.id,
         })
 
+class CharacterQueue(Queue):
+
+    queues = {}
+
 
