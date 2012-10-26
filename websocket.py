@@ -3,8 +3,9 @@ from django.contrib.auth import get_user
 from django.utils.importlib import import_module
 
 from webdnd.player.models.roll import roll_text
+from webdnd.player.models.campaigns import Campaign
 
-from events.queue import CampaignQueue
+from events.queue import CampaignQueue, ChatQueue
 from functools import wraps
 from syncrae.events.event import Event
 from syncrae.session import Session
@@ -59,8 +60,15 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         else:
             self.session.listen(self)
 
-        self.queue = CampaignQueue.get(self.webdnd_session['cid'])
+        cid = self.webdnd_session['cid']
+        self.campaign = Campaign.objects.get(id=cid)
+
+        self.queue = CampaignQueue.get(cid)
         self.queue.listen(self)
+
+        self.chats = set()
+        for userid in self.queue.users().keys():
+            self.new_chat(userid)
 
         # Send the 'New user' event
         self.queue.write_message('/sessions/status', {
@@ -72,16 +80,20 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.async(self.terminal.start)
 
     def on_close(self):
-        if hasattr(self, 'session') and self.session is not None:
+        if hasattr(self, 'session') and not self.session is None:
             self.session.drop(self)
 
-        if hasattr(self, 'queue') and self.queue is not None:
+        if hasattr(self, 'queue') and not self.queue is None:
             self.queue.drop(self)
             # Make sure the campaign group knows you logged out
             self.queue.write_message('/sessions/status', {
                 'name': self.user.name,
                 'status': 'offline',
             })
+
+        if hasattr(self, 'chats') and not self.chats is None:
+            for chat in self.chats:
+                chat.drop(self)
 
     def on_message(self, raw_message):
         try:
@@ -92,6 +104,14 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             logging.exception('Cannot parse message: ' + raw_message)
 
         self.handle_topic(topic, data)
+
+    def new_chat(self, id):
+        id = ChatQueue.id([self.user.id, id])
+        chat = ChatQueue.get(id)
+
+        self.chats.add(chat)
+
+        chat.listen(self)
 
 
     ##############################################
@@ -135,6 +155,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     TOPICS = {
         '/messages': 'message',
+        '/messages/new': 'msg_new',
         '/terminal/command': 'terminal',
     }
 
@@ -151,6 +172,13 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         # emit event to all listeners
         # using the original full topic
         self.queue.write_message(topic, data)
+
+    def hdl_msg_new(self, data):
+        chid = data.get('chid')
+        if chid:
+            ChatQueue.get(chid).write_message('/messages/new', data)
+        else:
+            self.hdl_default('/messages/new', data)
 
     def hdl_message(self, data):
         data['name'] = self.user.name
