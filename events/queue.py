@@ -102,8 +102,7 @@ class ChatQueue(Queue):
 
     queues = {}
 
-    def __init__(self, users):
-        id = ChatQueue.id(users)
+    def __init__(self, id):
         super(ChatQueue, self).__init__(id)
 
     @staticmethod

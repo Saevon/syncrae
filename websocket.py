@@ -68,7 +68,8 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
         self.chats = set()
         for userid in self.queue.users().keys():
-            self.new_chat(userid)
+            if userid != self.user.id:
+                self.new_chat(userid)
 
         # Send the 'New user' event
         self.queue.write_message('/sessions/status', {
@@ -178,6 +179,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         if chatid:
             ChatQueue.get(chatid).write_message('/messages/new', data)
         else:
+            data['chatid'] = 'campaign'
             self.hdl_default('/messages/new', data)
 
     def hdl_message(self, data):
