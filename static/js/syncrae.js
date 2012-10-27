@@ -123,6 +123,24 @@ syncrae.connect = function(retry) {
 
     var websocket = new WebSocket('ws://' + HOST + '/event');
 
+    // Allows the debug toolbar to get messages from before it is
+    // initialized
+    var storage= [];
+    var storing = true;
+    var store = {
+        read: function() {
+            var tmp = $.extend([], storage);
+            storage = [];
+            storing = false;
+            return tmp;
+        },
+        add: function(data) {
+            if (storing) {
+                storage.push(data);
+            }
+        }
+    };
+
     $.extend(websocket, {
         onclose: function(event) {
             syncrae.off(true);
@@ -142,13 +160,16 @@ syncrae.connect = function(retry) {
                 });
             }
 
+            store.add(message);
+
             // Don't forget the base handler
             syncrae.listeners['/'].each(function(callback) {
-                callback(message.data);
+                callback(message.data, message.topic);
             });
         }
     });
 
+    syncrae.storage = store;
     syncrae.websocket = websocket;
 };
 syncrae.connect();
