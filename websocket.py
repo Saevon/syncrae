@@ -176,7 +176,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
     def hdl_msg_new(self, data):
         chatid = data.get('chatid')
-        if chatid:
+        if chatid and chatid != 'campaign':
             ChatQueue.get(chatid).write_message('/messages/new', data)
         else:
             data['chatid'] = 'campaign'
