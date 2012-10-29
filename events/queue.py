@@ -117,14 +117,14 @@ class ChatQueue(Queue):
     def listen(self, obj):
         super(ChatQueue, self).listen(obj)
         self.write_message('/chat/open', {
-            'id': self.id,
+            'chatid': self.id,
         })
 
     @cascade
     def drop(self, obj):
         super(ChatQueue, self).drop(obj)
-        self.write_message('/chat/open', {
-            'id': self.id,
+        self.write_message('/chat/close', {
+            'chatid': self.id,
         })
 
 class CharacterQueue(Queue):
