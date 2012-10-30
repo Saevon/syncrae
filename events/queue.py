@@ -7,7 +7,7 @@ class Queue(object):
     queues = {}
 
     def __init__(self, id):
-        self.__all = set()
+        self._all = set()
         self.id = id
 
         # Make sure the factory still works
@@ -35,21 +35,21 @@ class Queue(object):
             event.write_message(listener)
 
     def listeners(self, topic):
-        listeners = self.__all
+        listeners = self._all
         return listeners
 
     @cascade
     def listen(self, obj):
-        self.__all.add(obj)
+        self._all.add(obj)
 
     @cascade
     def drop(self, obj):
-        self.__all.remove(obj)
+        self._all.remove(obj)
         if self.is_empty():
             self.remove(self.id)
 
     def is_empty(self):
-        return len(self.__all) == 0
+        return len(self._all) == 0
 
 
 
@@ -59,40 +59,40 @@ class CampaignQueue(Queue):
 
     def __init__(self, id):
         super(CampaignQueue, self).__init__(id)
-        self.__listeners = defaultdict(set)
-        self.__users = {}
+        self._listeners = defaultdict(set)
+        self._users = {}
 
     def listeners(self, topic):
         listeners = super(CampaignQueue, self).listeners(topic)
-        listeners.update(set(self.__listeners[topic]))
+        listeners.update(set(self._listeners[topic]))
         return listeners
 
     @cascade
     def listen(self, obj, topics=True):
-        self.__users[obj.user.id] = obj
+        self._users[obj.user.id] = obj
         if topics == True:
             super(CampaignQueue, self).listen(obj)
         else:
             for topic in topics:
-                self.__listeners[topic].add(obj)
+                self._listeners[topic].add(obj)
 
     @cascade
     def drop(self, obj, topics=True):
         super(CampaignQueue, self).drop(obj)
-        self.__users.pop(obj.user.id)
+        self._users.pop(obj.user.id)
         if topics != True:
             for topic in topics:
-                self.__listeners[topic].remove(obj)
+                self._listeners[topic].remove(obj)
 
             if self.is_empty():
                 self.remove(self.id)
 
     def is_empty(self):
         parent = super(CampaignQueue, self).is_empty()
-        return (parent and len(self.__listeners) == 0)
+        return (parent and len(self._listeners) == 0)
 
     def users(self):
-        return self.__users
+        return self._users
 
 
 class ChatQueue(Queue):
@@ -118,6 +118,8 @@ class ChatQueue(Queue):
         super(ChatQueue, self).listen(obj)
         self.write_message('/chat/open', {
             'chatid': self.id,
+            # Uniquify the userids, prevents problems with multiple listeners in a chat
+            'users': list(set([u.user.id for u in self._all])),
         })
 
     @cascade

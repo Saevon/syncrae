@@ -25,6 +25,16 @@ class RequestDummy(object):
 
 class EventWebsocket(tornado.websocket.WebSocketHandler):
 
+    all = {}
+
+    @staticmethod
+    def get(uid):
+        return EventWebsocket.all.get(uid, False)
+
+    @staticmethod
+    def remove(uid):
+        return EventWebsocket.all.pop(uid)
+
     def async(self, func, args=None, kwargs=None):
         if args is None:
             args = []
@@ -66,14 +76,17 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         self.queue = CampaignQueue.get(cid)
         self.queue.listen(self)
 
+        EventWebsocket.all[self.user.id] = self
+
         self.chats = set()
-        for userid in self.queue.users().keys():
-            if userid != self.user.id:
-                self.new_chat(userid)
+        for player in self.campaign.players.exclude(user__id=self.user.id):
+            uid = player.user.id
+            self.new_chat(uid)
 
         # Send the 'New user' event
         self.queue.write_message('/sessions/status', {
             'name':  self.user.name,
+            'uid': self.user.id,
             'status': 'online',
         })
 
@@ -106,13 +119,16 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
 
         self.handle_topic(topic, data)
 
-    def new_chat(self, id):
-        id = ChatQueue.id([self.user.id, id])
+    def new_chat(self, uid):
+        id = ChatQueue.id([self.user.id, uid])
         chat = ChatQueue.get(id)
 
         self.chats.add(chat)
 
         chat.listen(self)
+        other = EventWebsocket.get(uid)
+        if other:
+            chat.listen(other)
 
 
     ##############################################
