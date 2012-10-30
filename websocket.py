@@ -70,13 +70,21 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         else:
             self.session.listen(self)
 
-        cid = self.webdnd_session['cid']
+        # Store this in the uid->EventWebsocket dict
+        # TODO: can't store more than one uid->socket pair
+        # thus you can't have multiple tabs
+        EventWebsocket.all[self.user.id] = self
+
+        cid = self.webdnd_session.get('cid')
+
+        # Only editing a Character
+        if not cid:
+            pass
+
         self.campaign = Campaign.objects.get(id=cid)
 
         self.queue = CampaignQueue.get(cid)
         self.queue.listen(self)
-
-        EventWebsocket.all[self.user.id] = self
 
         self.chats = set()
         for player in self.campaign.players.exclude(user__id=self.user.id):
