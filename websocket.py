@@ -82,6 +82,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             pass
 
         self.campaign = Campaign.objects.get(id=cid)
+        self.player = self.campaign.players.get(user=self.user)
 
         self.queue = CampaignQueue.get(cid)
         self.queue.listen(self)
@@ -91,9 +92,17 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
             uid = player.user.id
             self.new_chat(uid)
 
+        # send player starting values
+        for player in self.campaign.players.all():
+            Event('/session/update', {
+                'uid': player.user.id,
+                'color': player.color,
+                'name': player.user.name,
+                # TODO: status
+            }).write_message(self)
+
         # Send the 'New user' event
-        self.queue.write_message('/sessions/status', {
-            'name':  self.user.name,
+        self.queue.write_message('/session/update', {
             'uid': self.user.id,
             'status': 'online',
         })
@@ -108,9 +117,9 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         if hasattr(self, 'queue') and not self.queue is None:
             self.queue.drop(self)
             # Make sure the campaign group knows you logged out
-            self.queue.write_message('/sessions/status', {
-                'name': self.user.name,
+            self.queue.write_message('/session/update', {
                 'status': 'offline',
+                'uid': self.user.id,
             })
 
         if hasattr(self, 'chats') and not self.chats is None:
@@ -188,7 +197,7 @@ class EventWebsocket(tornado.websocket.WebSocketHandler):
         '''
         Occurs when the session is rejected
         '''
-        Event('/sessions/error', {
+        Event('/session/error', {
             'error': 'Your gameplay key was wrong, go back to the campaign and try again.',
         }, err='5101').write_message(self)
         self.close()

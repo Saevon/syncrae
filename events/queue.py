@@ -120,6 +120,7 @@ class ChatQueue(Queue):
             'chatid': self.id,
             # Uniquify the userids, prevents problems with multiple listeners in a chat
             'users': list(set([u.user.id for u in self._all])),
+            'expected': list(set(self.id.split('-'))),
         })
 
     @cascade
